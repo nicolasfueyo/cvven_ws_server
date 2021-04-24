@@ -22,6 +22,6 @@ public class JDBCTest {
     public void test() throws ClassNotFoundException, SQLException{
         DisponibilitesDAO dao = new DisponibilitesDAO();
         
-        dao.chercherDispos(new Date());
+        dao.chercherDispos(new Date(2021, 7, 17));
     }
 }

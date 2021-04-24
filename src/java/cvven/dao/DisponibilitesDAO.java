@@ -11,7 +11,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -23,16 +26,28 @@ public class DisponibilitesDAO {
 
     public void chercherDispos(Date date) throws ClassNotFoundException, SQLException {
 
+        // Calcule date +1 jours
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        c.add(Calendar.DATE, 1);
+        Date lendemain = c.getTime();
         
-        String sql = "SELECT  tl.id, tl.nom, tl.nb_logements, (\n"
-                + "    SELECT  SUM(rl.quantite)\n"
-                + "    FROM    reservation_logement rl\n"
-                + "            JOIN reservation r ON rl.id_reservation=r.id\n"
-                + "    WHERE   rl.id_typelogement=tl.id\n"
-                + "            AND r.date_entree<='17/7/2021'\n"
-                + "            AND r.date_sortie>='18/7/2021'             \n"
-                + ") nb_logements_occupes\n"
-                + "FROM    typelogement tl;";
+        SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+        
+        String strDate = format.format(date);
+        String strDemain = format.format(lendemain);
+        
+        String sql = String.format(
+                "SELECT  tl.id, tl.nom, tl.nb_logements, ( "
+                + "    SELECT  SUM(rl.quantite) "
+                + "    FROM    reservation_logement rl "
+                + "            JOIN reservation r ON rl.id_reservation=r.id "
+                + "    WHERE   rl.id_typelogement=tl.id "
+                + "            AND r.date_entree<='%s' "
+                + "            AND r.date_sortie>='%s '             "
+                + "            AND r.etat='VALIDE' "
+                + ") nb_logements_occupes "
+                + "FROM    typelogement tl;", strDate, strDemain);
 
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/cvven", "root", "");
