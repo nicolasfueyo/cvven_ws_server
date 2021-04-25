@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class DisponibilitesDAO {
 
-    public void chercherDispos(Date date) throws ClassNotFoundException, SQLException {
+    public List<Disponibilite> chercherDispos(Date date) throws ClassNotFoundException, SQLException {
 
         // Calcule date +1 jours
         Calendar c = Calendar.getInstance();
@@ -70,6 +70,6 @@ public class DisponibilitesDAO {
         }
         con.close();
         
-        System.out.println( disponibilites );
+        return disponibilites;
     }
 }
