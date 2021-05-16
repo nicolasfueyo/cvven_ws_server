@@ -25,15 +25,10 @@ import javax.jws.WebParam;
 public class DisposWS {
 
     @WebMethod(operationName = "rechercheDisposParDate")
-    public List<Disponibilite> hello(@WebParam(name = "date") String date) throws Exception {
-        
-        // Conversion date au format date
-        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        Date d = format.parse(date);
-        
+    public List<Disponibilite> rechercheDisposParDate(@WebParam(name = "date") String date) throws Exception {
         
         DisponibilitesDAO dao = new DisponibilitesDAO();
         
-        return dao.chercherDispos(d);
+        return dao.chercherDispos(date);
     }    
 }

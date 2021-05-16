@@ -19,56 +19,73 @@ import java.util.Date;
 import java.util.List;
 
 /**
- *
+ * Classe comprenant les fonctions d'accès la la base de données ( DAO = Data Access Object )
  * @author nicol
  */
 public class DisponibilitesDAO {
 
-    public List<Disponibilite> chercherDispos(Date date) throws ClassNotFoundException, SQLException {
-
-        // Calcule date +1 jours
-        Calendar c = Calendar.getInstance();
-        c.setTime(date);
-        c.add(Calendar.DATE, 1);
-        Date lendemain = c.getTime();
+    public Long chercheDispoPourTypeLogement(long idTypeLogement, String date) throws ClassNotFoundException, SQLException {                
         
-        SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
-        
-        String strDate = format.format(date);
-        String strDemain = format.format(lendemain);
-        
+        // Liste nb logements dispo pour le type et la date voulue
         String sql = String.format(
-                "SELECT  tl.id, tl.nom, tl.nb_logements, ( "
-                + "    SELECT  SUM(rl.quantite) "
-                + "    FROM    reservation_logement rl "
-                + "            JOIN reservation r ON rl.id_reservation=r.id "
-                + "    WHERE   rl.id_typelogement=tl.id "
-                + "            AND r.date_entree<='%s' "
-                + "            AND r.date_sortie>='%s '             "
-                + "            AND r.etat='VALIDE' "
-                + ") nb_logements_occupes "
-                + "FROM    typelogement tl;", strDate, strDemain);
-
+                "SELECT  typelogement.nb_logements - SUM(reservation_logement.quantite) logements_libres\n" +
+                "FROM    reservation        \n" +
+                "        LEFT JOIN reservation_logement ON reservation.id=reservation_logement.id_reservation\n" +
+                "        LEFT JOIN typelogement ON typelogement.id = reservation_logement.id_typelogement\n" +
+                "WHERE   reservation_logement.id_typelogement=%d\n" +
+                "        AND reservation.etat='VALIDE'\n" +
+                "        AND '%s' BETWEEN reservation.date_entree AND reservation.date_sortie;", idTypeLogement, date);
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/cvven", "root", "");
         Statement stmt = con.createStatement();
         ResultSet rs = stmt.executeQuery( sql );
         
+        rs.next();       
+        
+        Long res =  rs.getObject("logements_libres", Long.class);
+        if(  rs.wasNull() ){// Si la requete a renvoyé NULL et pos un nombre.
+            return null;
+        }else{
+            return res;
+        }
+    }
+    
+    /**
+     * Renvoie les dispos de chaque type de logement pour une date données au format dd/MM/yyyy
+     * @param date
+     * @return Une liste de Disponibilité.
+     * @throws ClassNotFoundException
+     * @throws SQLException 
+     */
+    public List<Disponibilite> chercherDispos(String date) throws ClassNotFoundException, SQLException {
+
+        // Liste types de logement
+        String sql = "SELECT * FROM typelogement";
+
+        Class.forName("com.mysql.jdbc.Driver");
+        Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/cvven", "root", "");
+        Statement stmt = con.createStatement();
+        ResultSet rs = stmt.executeQuery( sql );       
+        
+        // Préremplit la liste des dispos
         List<Disponibilite> disponibilites = new ArrayList<>();
         while (rs.next()) {
             
-            long nbLogements = rs.getLong("nb_logements");
-            Long nbLogementsOccupes = rs.getLong("nb_logements_occupes");
-            long nbLogementsDispo = nbLogements;
-            if( nbLogementsOccupes!=null ){
-                nbLogementsDispo = nbLogements - nbLogementsOccupes;
-            }
-            
-            Disponibilite dispo = new Disponibilite(rs.getLong("id"), rs.getString("nom"), nbLogementsDispo);
+            Disponibilite dispo = new Disponibilite(rs.getLong("id"), rs.getString("nom"), rs.getLong("nb_logements"));
             
             disponibilites.add(dispo);
         }
         con.close();
+        
+        // Charge les dispos pour chaque type de logement
+        for(Disponibilite dispo : disponibilites){
+            Long nbDispo = this.chercheDispoPourTypeLogement(dispo.getIdTypeLogement(), date);
+            
+            if( nbDispo!=null ){
+                dispo.setNbDisponibilites( nbDispo );
+            }
+            
+        }
         
         return disponibilites;
     }

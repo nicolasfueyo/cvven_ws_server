@@ -6,7 +6,7 @@
 package cvven.entity;
 
 /**
- *
+ * Type de données décrivant un type de logement et le nb de logements dispos.
  * @author nicol
  */
 public class Disponibilite {
