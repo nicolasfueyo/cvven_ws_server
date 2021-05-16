@@ -29,6 +29,7 @@ public class DisposWS {
         
         DisponibilitesDAO dao = new DisponibilitesDAO();
         
+        // Renvoie la liste des dispos.
         return dao.chercherDispos(date);
     }    
 }
